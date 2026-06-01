@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fund II — Investment Screener</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1112;--bg2:#161a1d;--bg3:#1e2326;--border:#2a3035;--border2:#333c42;--text:#e8eaec;--text2:#8a9299;--text3:#5a6470;--green:#4ade80;--green-dim:#1a3d2b;--green-border:#2d6644;--amber:#fbbf24;--amber-dim:#3d2e10;--amber-border:#6b4e1a;--red:#f87171;--red-dim:#3d1515;--red-border:#6b2222;--blue:#60a5fa;--purple:#a78bfa;--accent:#4ade80;--radius:8px;--font:'DM Sans',sans-serif;--mono:'DM Mono',monospace}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:14px}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh}
+.shell{display:flex;height:100vh;overflow:hidden}
+.sidebar{width:230px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto}
+.main{flex:1;overflow-y:auto;padding:2rem 2.5rem}
+.sidebar-logo{padding:1.5rem 1.25rem 1rem;border-bottom:1px solid var(--border)}
+.sidebar-logo .fund{font-size:10px;font-weight:500;color:var(--text3);letter-spacing:.12em;text-transform:uppercase;font-family:var(--mono);margin-bottom:4px}
+.sidebar-logo .title{font-size:15px;font-weight:600;color:var(--text);line-height:1.3}
+.nav{padding:.75rem 0;flex:1}
+.nav-section{padding:1rem 1.25rem 4px;font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;font-family:var(--mono)}
+.nav-item{display:flex;align-items:center;gap:10px;padding:7px 1.25rem;font-size:13px;color:var(--text2);cursor:pointer;border-left:2px solid transparent;transition:all .15s;user-select:none}
+.nav-item:hover{color:var(--text);background:var(--bg3)}
+.nav-item.active{color:var(--accent);border-left-color:var(--accent);background:#1a2e1e}
+.nav-item .ico{font-size:14px;width:18px;text-align:center}
+.nav-badge{margin-left:auto;font-size:10px;font-family:var(--mono);background:var(--bg3);border:1px solid var(--border2);padding:1px 6px;border-radius:10px;color:var(--text3)}
+
+/* history items in sidebar */
+.hist-item{padding:6px 1.25rem;cursor:pointer;border-left:2px solid transparent;transition:all .12s}
+.hist-item:hover{background:var(--bg3)}
+.hist-item .hi-name{font-size:12px;font-weight:500;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hist-item .hi-score{font-size:10px;font-family:var(--mono)}
+
+.sidebar-bottom{padding:1rem 1.25rem;border-top:1px solid var(--border)}
+.api-status{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text3)}
+.api-dot{width:7px;height:7px;border-radius:50%;background:var(--text3);flex-shrink:0}
+.api-dot.ok{background:var(--green);box-shadow:0 0 6px var(--green)}
+.api-dot.err{background:var(--red)}
+
+.page-header{margin-bottom:1.75rem}
+.page-title{font-size:22px;font-weight:600;color:var(--text);margin-bottom:4px}
+.page-sub{font-size:13px;color:var(--text2)}
+
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem}
+.card-title{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;font-family:var(--mono);margin-bottom:1rem}
+
+/* DASHBOARD */
+.dash-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:1.5rem}
+.dash-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:1.1rem 1rem;cursor:pointer;transition:border-color .15s}
+.dash-card:hover{border-color:var(--border2)}
+.dash-card .dc-label{font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-bottom:8px}
+.dash-card .dc-num{font-size:32px;font-weight:600;font-family:var(--mono);line-height:1}
+.dash-card .dc-sub{font-size:11px;color:var(--text3);margin-top:4px}
+.dash-card.total .dc-num{color:var(--text)}
+.dash-card.below .dc-num{color:var(--red)}
+.dash-card.avg .dc-num{color:var(--amber)}
+.dash-card.good .dc-num{color:var(--blue)}
+.dash-card.excellent .dc-num{color:var(--green)}
+
+.funnel-bar{display:flex;height:8px;border-radius:4px;overflow:hidden;margin-bottom:1.5rem;gap:2px}
+.funnel-seg{height:100%;border-radius:2px;transition:width .4s}
+
+/* PIPELINE */
+.pipe-filter-bar{display:flex;gap:8px;margin-bottom:1.25rem;flex-wrap:wrap}
+.pipe-filter{padding:5px 12px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--text3);font-family:var(--font);transition:all .15s}
+.pipe-filter:hover{color:var(--text)}
+.pipe-filter.active{color:#0a1a10}
+
+.deal-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.1rem;margin-bottom:8px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:border-color .15s}
+.deal-card:hover{border-color:var(--border2)}
+.deal-score{font-size:20px;font-weight:600;font-family:var(--mono);width:44px;flex-shrink:0;text-align:center}
+.deal-info{flex:1;min-width:0}
+.deal-name{font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px}
+.deal-meta{font-size:11px;color:var(--text3);font-family:var(--mono)}
+.deal-pill{font-size:10px;font-weight:600;padding:3px 10px;border-radius:20px;font-family:var(--mono);flex-shrink:0}
+.deal-actions{display:flex;gap:6px;flex-shrink:0}
+.icon-btn{background:transparent;border:1px solid var(--border2);border-radius:6px;padding:4px 8px;cursor:pointer;font-size:12px;color:var(--text3);transition:all .15s}
+.icon-btn:hover{color:var(--text);border-color:var(--border2);background:var(--bg3)}
+
+/* UPLOAD */
+.setup-card{background:linear-gradient(135deg,#1a2e1e 0%,#1e2326 100%);border:1px solid var(--green-border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1.25rem}
+.setup-card h3{font-size:13px;font-weight:600;color:var(--green);margin-bottom:5px}
+.setup-card p{font-size:12px;color:var(--text2);margin-bottom:.75rem;line-height:1.6}
+.upload-zone{border:1px dashed var(--border2);border-radius:var(--radius);padding:2rem;text-align:center;background:var(--bg2);cursor:pointer;transition:all .2s;position:relative}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--green);background:#1a2e1e22}
+.upload-zone input{display:none}
+.btn{padding:8px 16px;border-radius:var(--radius);font-size:13px;font-weight:500;cursor:pointer;border:none;font-family:var(--font);transition:all .15s;white-space:nowrap}
+.btn-primary{background:var(--green);color:#0a1a10}
+.btn-primary:hover{background:#6ee7a0}
+.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border2)}
+.btn-ghost:hover{color:var(--text);background:var(--bg3)}
+.btn-sm{padding:5px 12px;font-size:12px}
+.btn-danger{background:transparent;color:var(--red);border:1px solid var(--red-border)}
+.btn-danger:hover{background:var(--red-dim)}
+
+/* SCORE */
+.verdict-banner{border-radius:var(--radius);padding:1rem 1.25rem;margin-bottom:1.5rem;display:flex;justify-content:space-between;align-items:center;border:1px solid}
+.verdict-pill{font-size:12px;font-weight:600;padding:4px 12px;border-radius:20px;font-family:var(--mono)}
+.score-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1.25rem}
+.metric-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px}
+.metric-label{font-size:10px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;margin-bottom:3px}
+.metric-val{font-size:18px;font-weight:600}
+.section-header{display:flex;align-items:center;gap:8px;margin:1.25rem 0 8px}
+.section-name{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.07em;font-family:var(--mono)}
+.weight-badge{font-size:10px;font-family:var(--mono);color:var(--text3);background:var(--bg3);border:1px solid var(--border);padding:2px 7px;border-radius:4px}
+.sec-score-badge{font-size:10px;font-family:var(--mono);padding:2px 7px;border-radius:4px;margin-left:auto}
+.crit-item{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:9px 11px;margin-bottom:4px}
+.crit-row{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.crit-name{font-size:13px;font-weight:500;flex:1;line-height:1.4}
+.score-btns{display:flex;gap:3px;flex-shrink:0}
+.sbtn{font-size:11px;padding:3px 8px;border-radius:4px;cursor:pointer;font-family:var(--mono);border:1px solid var(--border2);background:transparent;color:var(--text3);transition:all .12s}
+.sbtn:hover{color:var(--text);background:var(--bg3)}
+.sbtn.ideal.on{background:var(--green-dim);border-color:var(--green-border);color:var(--green);font-weight:500}
+.sbtn.acceptable.on{background:var(--amber-dim);border-color:var(--amber-border);color:var(--amber);font-weight:500}
+.sbtn.pass.on{background:var(--red-dim);border-color:var(--red-border);color:var(--red);font-weight:500}
+.crit-desc{font-size:11px;color:var(--text3);margin-top:4px;line-height:1.5}
+.crit-note{width:100%;font-size:11px;padding:4px 8px;margin-top:5px;border-radius:5px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-family:var(--font);outline:none;resize:none;transition:border-color .15s}
+.crit-note:focus{border-color:var(--border2)}
+.crit-note::placeholder{color:var(--text3)}
+
+/* bars */
+.bar-row{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.bar-label{font-size:12px;color:var(--text2);width:175px;flex-shrink:0;font-family:var(--mono)}
+.bar-track{flex:1;height:5px;background:var(--bg3);border-radius:3px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;transition:width .4s}
+.bar-pct{font-size:11px;font-weight:500;color:var(--text3);width:34px;text-align:right;font-family:var(--mono)}
+
+/* weights */
+.weight-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:8px}
+.weight-slider-row{display:flex;align-items:center;gap:12px}
+input[type=range]{flex:1;accent-color:var(--green);cursor:pointer}
+.total-bar{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-radius:var(--radius);margin-top:8px;font-size:13px;border:1px solid}
+
+.hl-item{display:flex;gap:10px;margin-bottom:7px;align-items:flex-start}
+.hl-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.ai-loading{display:flex;align-items:center;gap:10px;padding:1rem;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--text2);margin-top:1rem}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{width:16px;height:16px;border:2px solid var(--border2);border-top-color:var(--green);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
+.err-box{background:var(--red-dim);border:1px solid var(--red-border);border-radius:var(--radius);padding:12px;font-size:12px;color:var(--red);margin-top:12px;font-family:var(--mono);white-space:pre-wrap;word-break:break-all}
+.pane{display:none}.pane.active{display:block}
+.top-row{display:flex;gap:10px;margin-bottom:1.25rem;align-items:center}
+.company-input{flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:8px 12px;font-size:14px;font-weight:500;color:var(--text);font-family:var(--font);outline:none;transition:border-color .15s}
+.company-input:focus{border-color:var(--border2)}
+.company-input::placeholder{color:var(--text3)}
+.empty-state{text-align:center;padding:3rem;color:var(--text3);font-size:13px}
+.empty-state .big{font-size:32px;margin-bottom:10px}
+.tag{display:inline-block;font-size:10px;font-family:var(--mono);padding:2px 7px;border-radius:4px;border:1px solid}
+</style>
+</head>
+<body>
+<div class="shell">
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="fund">Fund II</div>
+    <div class="title">Investment Screener</div>
+  </div>
+  <nav class="nav">
+    <div class="nav-section">Workflow</div>
+    <div class="nav-item active" id="nav-dashboard" onclick="showPage('dashboard')"><span class="ico">▦</span> Dashboard</div>
+    <div class="nav-item" id="nav-upload" onclick="showPage('upload')"><span class="ico">⬆</span> Upload & Analyse</div>
+    <div class="nav-item" id="nav-score" onclick="showPage('score')"><span class="ico">◎</span> Score Criteria</div>
+    <div class="nav-item" id="nav-weights" onclick="showPage('weights')"><span class="ico">⚖</span> Adjust Weights</div>
+    <div class="nav-section">Deal Flow</div>
+    <div class="nav-item" id="nav-pipeline" onclick="showPage('pipeline')"><span class="ico">≡</span> Pipeline <span class="nav-badge" id="pipe-badge">0</span></div>
+    <div class="nav-section">History</div>
+    <div id="hist-nav-list"></div>
+  </nav>
+  <div class="sidebar-bottom">
+    <div class="api-status"><div class="api-dot" id="api-dot"></div><span id="api-status-text">Server not checked</span></div>
+  </div>
+</aside>
+
+<main class="main">
+
+  <!-- DASHBOARD -->
+  <div class="pane active" id="page-dashboard">
+    <div class="page-header">
+      <div class="page-title">Dashboard</div>
+      <div class="page-sub">Deal flow overview across all screened companies</div>
+    </div>
+    <div id="dash-content"></div>
+  </div>
+
+  <!-- UPLOAD -->
+  <div class="pane" id="page-upload">
+    <div class="page-header">
+      <div class="page-title">Upload & Analyse</div>
+      <div class="page-sub">Upload a pitch deck or meeting notes — Claude will score all criteria automatically</div>
+    </div>
+    <div class="setup-card">
+      <h3>⚡ Server required</h3>
+      <p>Running locally: double-click <code style="background:var(--bg3);padding:1px 5px;border-radius:3px;font-family:var(--mono)">START_SERVER.bat</code> and keep that window open. Using Railway: update <code style="background:var(--bg3);padding:1px 5px;border-radius:3px;font-family:var(--mono)">PROXY_URL</code> in the HTML to your Railway URL.</p>
+      <button class="btn btn-primary btn-sm" onclick="checkServer()">Check server</button>
+      <span id="server-check-result" style="margin-left:10px;font-size:12px;color:var(--text3)"></span>
+    </div>
+    <div class="top-row">
+      <input class="company-input" id="company-name" placeholder="Company name (Claude will detect if left blank)" oninput="renderVerdict();renderSummary()">
+      <button class="btn btn-ghost btn-sm" onclick="resetAll()">Reset</button>
+    </div>
+    <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
+      <div style="font-size:28px;margin-bottom:8px">📄</div>
+      <div style="font-size:14px;font-weight:500;color:var(--text);margin-bottom:3px">Drop pitch deck or meeting notes here</div>
+      <div style="font-size:12px;color:var(--text3)">PDF, TXT, MD — or click to browse</div>
+      <input type="file" id="file-input" accept=".pdf,.txt,.md,.png,.jpg,.jpeg" onchange="handleFile(event)">
+    </div>
+    <div id="ai-loading" style="display:none" class="ai-loading"><div class="spinner"></div><span id="loading-text">Analysing…</span></div>
+    <div id="upload-result" style="display:none;margin-top:1.25rem"></div>
+  </div>
+
+  <!-- SCORE -->
+  <div class="pane" id="page-score">
+    <div class="page-header">
+      <div class="page-title">Score Criteria</div>
+      <div class="page-sub">Review and adjust scores across all 38 criteria</div>
+    </div>
+    <div id="verdict-area"></div>
+    <div id="criteria-list"></div>
+    <div id="score-save-area" style="margin-top:1.5rem"></div>
+  </div>
+
+  <!-- WEIGHTS -->
+  <div class="pane" id="page-weights">
+    <div class="page-header">
+      <div class="page-title">Adjust Weights</div>
+      <div class="page-sub">Set how much each section contributes to the total score</div>
+    </div>
+    <div id="weight-controls"></div>
+    <div id="weight-total"></div>
+  </div>
+
+  <!-- PIPELINE -->
+  <div class="pane" id="page-pipeline">
+    <div class="page-header">
+      <div class="page-title">Pipeline</div>
+      <div class="page-sub">All screened companies filtered by fit</div>
+    </div>
+    <div id="pipeline-content"></div>
+  </div>
+
+</main>
+</div>
+
+<script>
+const CRITERIA=[
+  {key:'A',section:'A. Overview',w:15,items:[
+    {key:'energyFit',label:'Energy efficiency fit',ideal:'Direct fit — accelerates energy transition',acceptable:'Indirect fit',unacceptable:'No clear fit'},
+    {key:'sector',label:'Sector',ideal:'Electrification / Ocean Space / Transition Acceleration',acceptable:'Industrial Decarbonization, Grid & Infra, Energy Storage, Transport, Smart Energy',unacceptable:'None of the above'},
+    {key:'geography',label:'Geography',ideal:'Nordics (HQ + origin)',acceptable:'Europe',unacceptable:'Outside Nordics + Europe'},
+    {key:'maturity',label:'Maturity',ideal:'Late Venture to Early Growth',acceptable:'Early to Mid Venture',unacceptable:'Seed to Late Seed'},
+    {key:'valueProp',label:'Value proposition',ideal:'Clear differentiation + proven financial ROI',acceptable:'Positive ROI but differentiation TBD',unacceptable:'No clear ROI or differentiation'}
+  ]},
+  {key:'B',section:'B. Product & Technology',w:10,items:[
+    {key:'techRisk',label:'Technical risk',ideal:'Low — repeat customers, proven product',acceptable:'Moderate',unacceptable:'High'},
+    {key:'productPortfolio',label:'Product portfolio',ideal:'Several products commercially available',acceptable:'One commercial + clear diversification roadmap',unacceptable:'One product, not yet commercialized'},
+    {key:'hwSw',label:'HW/SW',ideal:'Hardware + Software (dual exposure)',acceptable:'HW only',unacceptable:'SW only'}
+  ]},
+  {key:'C',section:'C. Commercial',w:25,items:[
+    {key:'commercialRisk',label:'Commercial risk',ideal:'Low — strong order intake, repeat customers, upsell',acceptable:'Moderate — 1-2 reputable customers',unacceptable:'High — LOIs, MOUs, verbal only'},
+    {key:'marketPotential',label:'Market potential',ideal:'Strong TAM/SOM growth',acceptable:'Moderately strong growth',unacceptable:'Weak growth'},
+    {key:'revDiversification',label:'Revenue diversification',ideal:'Multiple streams in place (LTM)',acceptable:'Multiple streams in sight',unacceptable:'Weak diversification potential'},
+    {key:'exitAttractiveness',label:'Exit attractiveness',ideal:'Well positioned, identified buyers + precedent M&As',acceptable:'Well positioned through pre-transaction changes',unacceptable:'Not attractive'},
+    {key:'regulatoryRisk',label:'Regulatory risk',ideal:'Low',acceptable:'Low/Medium',unacceptable:'Medium/High'},
+    {key:'subsidyRelevance',label:'Subsidy relevance',ideal:'None — competitive regardless',acceptable:'Low',unacceptable:'Medium/High'}
+  ]},
+  {key:'D',section:'D. Fundraise & Transaction',w:20,items:[
+    {key:'capitalRaise',label:'Capital raise amount',ideal:'EUR 10–20m',acceptable:'EUR 4–30m',unacceptable:'>EUR 30m'},
+    {key:'runway',label:'Runway',ideal:'Fully financed business case',acceptable:'20–30 months',unacceptable:'<20 months'},
+    {key:'ticketSize',label:'Fund ticket size',ideal:'EUR 30–50m',acceptable:'EUR 20–70m',unacceptable:'>EUR 70m'},
+    {key:'useOfProceeds',label:'Use of proceeds',ideal:'Growth initiatives only',acceptable:'Growth + some debt/secondary',unacceptable:'Funding ops / large secondary'},
+    {key:'secondarySale',label:'Secondary sale',ideal:'No secondary',acceptable:'<20% of equity raised',unacceptable:'>20% secondary'},
+    {key:'coInvestors',label:'Co-investors',ideal:'2–3 incl. one industrial/strategic',acceptable:'At least 1 relevant co-investor',unacceptable:'No identified co-investor'},
+    {key:'txCategory',label:'Transaction category',ideal:'Entrepreneurial (founders still active)',acceptable:'Entrepreneurial + corporate carve-out',unacceptable:'No founders active'},
+    {key:'mgmtTrackRecord',label:'Management track record',ideal:'Strong — built/sold companies or scaleup experience',acceptable:'Moderate with relevant execution history',unacceptable:'Little/no track record'},
+    {key:'mgmtChemistry',label:'Management chemistry',ideal:'Strong chemistry and communication skills',acceptable:'Medium chemistry',unacceptable:'Weak chemistry'},
+    {key:'mgmtOwnership',label:'Management ownership (incl. options)',ideal:'>30%',acceptable:'10–30%',unacceptable:'<10%'},
+    {key:'existingShareholders',label:'Existing shareholder participation',ideal:'>25%',acceptable:'<25%',unacceptable:'No participation'},
+    {key:'boardParticipation',label:'Board/founder/employee participation',ideal:'Yes',acceptable:'No',unacceptable:'—'}
+  ]},
+  {key:'E',section:'E. Financial',w:25,items:[
+    {key:'salesGrowth',label:'Annual sales growth (3–5yr)',ideal:'>30–50% late venture / >50–100% early venture',acceptable:'15–20%',unacceptable:'<15%'},
+    {key:'ltmSales',label:'LTM sales',ideal:'NOK 50–200m and/or ARR >EUR 25m',acceptable:'NOK 20–50m and/or ARR >EUR 10m',unacceptable:'Below acceptable'},
+    {key:'backlog',label:'Secured sales backlog',ideal:'>50% of LTM as backlog',acceptable:'<50% of LTM',unacceptable:'Negligible'},
+    {key:'grossMarginH',label:'LTM gross margin',ideal:'>45% HW / >65% SW',acceptable:'>35% HW / >50% SW',unacceptable:'Below acceptable'},
+    {key:'grossMarginP',label:'Gross margin potential',ideal:'>55% HW / >80% SW',acceptable:'>45% HW / >65% SW',unacceptable:'Below acceptable'},
+    {key:'breakEvenEbitda',label:'Time to EBITDA breakeven',ideal:'<12 months or already breakeven',acceptable:'Up to 24 months',unacceptable:'>24 months'},
+    {key:'breakEvenFcf',label:'Time to FCF breakeven',ideal:'0–18 months',acceptable:'Up to 36 months',unacceptable:'>36 months'},
+    {key:'capex',label:'CAPEX profile',ideal:'Asset light — majority through P&L/R&D',acceptable:'Asset light with some balance sheet capex',unacceptable:'Asset heavy'},
+    {key:'workingCapital',label:'Working capital (NWC)',ideal:'NWC > 1.0x',acceptable:'NWC > 1.0x (borderline)',unacceptable:'NWC < 1.0x'},
+    {key:'debt',label:'Short & long-term debt',ideal:'No debt facilities',acceptable:'Debt to be handled through capital raise',unacceptable:'Unresolved debt burden'}
+  ]},
+  {key:'F',section:'F. ESG & Competitive',w:5,items:[
+    {key:'co2Impact',label:'CO2 emissions impact',ideal:'Quantifiable reduction per unit sale',acceptable:'Indirect impact',unacceptable:'Negligible impact'},
+    {key:'directComp',label:'Direct competitors',ideal:'Strong competitive differentiation',acceptable:'Medium differentiation, strong GTM',unacceptable:'Low differentiation'},
+    {key:'indirectComp',label:'Indirect competitors',ideal:'No indirect competition',acceptable:'Little to no indirect competition',unacceptable:'Many indirect competitors'},
+    {key:'barriers',label:'Barriers to entry',ideal:'High',acceptable:'Medium',unacceptable:'Low'},
+    {key:'otherRisks',label:'Other identified risks',ideal:'No material risks',acceptable:'Some risks — solvable',unacceptable:'Risks — difficult to solve'}
+  ]}
+];
+
+const ALL_ITEMS=CRITERIA.flatMap(s=>s.items);
+// ── CONFIG: swap this URL after Railway deployment ──
+// Local:   const PROXY_URL = 'http://localhost:8765';
+// Railway: const PROXY_URL = 'https://YOUR-APP.up.railway.app';
+const PROXY_URL = 'http://localhost:8765';
+
+// Safe localStorage wrapper (file:// origins don't support localStorage in some browsers)
+const safeStorage = {
+  _mem: {},
+  get(k){ try{ return localStorage.getItem(k); }catch(e){ return this._mem[k]||null; } },
+  set(k,v){ try{ localStorage.setItem(k,v); }catch(e){ this._mem[k]=v; } }
+};
+
+let scores={},notes={},aiHighlights=[],aiConcerns=[],aiRedFlags=[],aiDiveInto=[],aiTheme='',aiComps=[];
+let weights={};CRITERIA.forEach(s=>{weights[s.key]=s.w;});
+
+// History stored in localStorage
+let history=JSON.parse(safeStorage.get('fundii_history')||'[]');
+
+function saveHistory(){safeStorage.set('fundii_history',JSON.stringify(history));}
+
+function getBand(p){
+  if(p>=90)return{label:'Excellent fit',color:'var(--green)',bg:'var(--green-dim)',border:'var(--green-border)',key:'excellent'};
+  if(p>=70)return{label:'Good fit',color:'var(--blue)',bg:'#1a2340',border:'#2d4a7a',key:'good'};
+  if(p>=50)return{label:'Average fit',color:'var(--amber)',bg:'var(--amber-dim)',border:'var(--amber-border)',key:'avg'};
+  return{label:'Below average',color:'var(--red)',bg:'var(--red-dim)',border:'var(--red-border)',key:'below'};
+}
+
+function calcScore(){
+  let ws=0,sectionScores={};
+  CRITERIA.forEach(sec=>{
+    const w=weights[sec.key]||0;
+    const si=sec.items.filter(i=>scores[i.key]!=null);
+    if(!si.length){sectionScores[sec.key]={pct:0,scored:0,total:sec.items.length};return;}
+    const raw=si.reduce((a,i)=>a+(scores[i.key]||0),0);
+    const pct=raw/(sec.items.length*2);
+    sectionScores[sec.key]={pct:Math.round(pct*100),scored:si.length,total:sec.items.length};
+    ws+=pct*w;
+  });
+  return{finalPct:Math.round(ws),sectionScores,totalScored:ALL_ITEMS.filter(i=>scores[i.key]!=null).length};
+}
+
+function showPage(p){
+  document.querySelectorAll('.pane').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  const ni=document.getElementById('nav-'+p);
+  if(ni)ni.classList.add('active');
+  if(p==='score'){renderVerdict();renderCriteria();renderSaveArea();}
+  if(p==='weights')renderWeights();
+  if(p==='pipeline')renderPipeline();
+  if(p==='dashboard')renderDashboard();
+}
+
+// ---- DASHBOARD ----
+function renderDashboard(){
+  const el=document.getElementById('dash-content');
+  const total=history.length;
+  const below=history.filter(h=>h.score<50).length;
+  const avg=history.filter(h=>h.score>=50&&h.score<70).length;
+  const good=history.filter(h=>h.score>=70&&h.score<90).length;
+  const excellent=history.filter(h=>h.score>=90).length;
+
+  if(total===0){
+    el.innerHTML='<div class="empty-state"><div class="big">▦</div>No companies screened yet.<br>Upload a deck to get started.</div>';
+    return;
+  }
+
+  // funnel bar
+  const seg=(n,color)=>n?`<div class="funnel-seg" style="flex:${n};background:${color}"></div>`:'';
+  const funnelHtml=`<div class="funnel-bar">${seg(below,'var(--red)')}${seg(avg,'var(--amber)')}${seg(good,'var(--blue)')}${seg(excellent,'var(--green)')}</div>`;
+
+  // recent 5
+  const recent=[...history].reverse().slice(0,5);
+  const recentHtml=recent.map(h=>{
+    const b=getBand(h.score);
+    return`<div class="deal-card" onclick="loadCompany('${h.id}')">
+      <div class="deal-score" style="color:${b.color}">${h.score}</div>
+      <div class="deal-info">
+        <div class="deal-name">${h.name}</div>
+        <div class="deal-meta">${h.date}</div>
+      </div>
+      <span class="deal-pill" style="color:${b.color};background:${b.bg};border:1px solid ${b.border}">${b.label}</span>
+    </div>`;
+  }).join('');
+
+  el.innerHTML=`
+    <div class="dash-grid">
+      <div class="dash-card total" onclick="showPage('pipeline')"><div class="dc-label">Total screened</div><div class="dc-num">${total}</div><div class="dc-sub">companies</div></div>
+      <div class="dash-card below" onclick="filterPipeline('below')"><div class="dc-label">Below average</div><div class="dc-num">${below}</div><div class="dc-sub">&lt; 50</div></div>
+      <div class="dash-card avg" onclick="filterPipeline('avg')"><div class="dc-label">Average fit</div><div class="dc-num">${avg}</div><div class="dc-sub">50 – 69</div></div>
+      <div class="dash-card good" onclick="filterPipeline('good')"><div class="dc-label">Good fit</div><div class="dc-num">${good}</div><div class="dc-sub">70 – 89</div></div>
+    </div>
+    <div class="dash-grid" style="grid-template-columns:1fr 3fr;gap:12px;margin-bottom:1.5rem">
+      <div class="dash-card excellent" onclick="filterPipeline('excellent')"><div class="dc-label">Excellent fit</div><div class="dc-num">${excellent}</div><div class="dc-sub">90 – 100</div></div>
+      <div class="card" style="margin:0">
+        <div class="card-title">Funnel distribution</div>
+        ${funnelHtml}
+        <div style="display:flex;gap:16px;flex-wrap:wrap">
+          ${[['var(--red)','Below average',below],['var(--amber)','Average',avg],['var(--blue)','Good',good],['var(--green)','Excellent',excellent]].map(([c,l,n])=>`<div style="display:flex;align-items:center;gap:5px"><div style="width:8px;height:8px;border-radius:50%;background:${c}"></div><span style="font-size:11px;color:var(--text3)">${l}: <strong style="color:var(--text2)">${n}</strong></span></div>`).join('')}
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Recently screened</div>
+      ${recentHtml}
+      ${total>5?`<div style="margin-top:8px;text-align:center"><button class="btn btn-ghost btn-sm" onclick="showPage('pipeline')">View all ${total} companies →</button></div>`:''}
+    </div>`;
+}
+
+// ---- PIPELINE ----
+let pipeFilter='all',themeFilter='all';
+function filterPipeline(band){pipeFilter=band;themeFilter='all';showPage('pipeline');}
+
+function renderPipeline(){
+  const el=document.getElementById('pipeline-content');
+  if(!history.length){el.innerHTML='<div class="empty-state"><div class="big">≡</div>No companies screened yet.</div>';return;}
+
+  const THEME_COLORS={'Electrification':'#facc15','Ocean Space':'#38bdf8','Energy Security':'#a78bfa','Other':'var(--text3)'};
+
+  const fitFilters=[
+    {key:'all',label:'All fits'},
+    {key:'excellent',label:'Excellent (90+)',color:'var(--green)'},
+    {key:'good',label:'Good (70–89)',color:'var(--blue)'},
+    {key:'avg',label:'Average (50–69)',color:'var(--amber)'},
+    {key:'below',label:'Below avg (<50)',color:'var(--red)'}
+  ];
+  const themeFilters=[
+    {key:'all',label:'All themes'},
+    {key:'Electrification',label:'⚡ Electrification',color:'#facc15'},
+    {key:'Ocean Space',label:'🌊 Ocean Space',color:'#38bdf8'},
+    {key:'Energy Security',label:'🛡 Energy Security',color:'#a78bfa'},
+    {key:'Other',label:'◉ Other',color:'var(--text3)'}
+  ];
+
+  const fitBar=fitFilters.map(f=>{
+    const active=pipeFilter===f.key;const col=f.color||'var(--text2)';
+    return`<button class="pipe-filter${active?' active':''}" style="${active?`background:${col};border-color:${col};color:#0a1a10`:''}" onclick="pipeFilter='${f.key}';renderPipeline()">${f.label}</button>`;
+  }).join('');
+
+  const themeBar=themeFilters.map(f=>{
+    const active=themeFilter===f.key;const col=f.color||'var(--text2)';
+    return`<button class="pipe-filter${active?' active':''}" style="${active?`background:${col};border-color:${col};color:#0a1a10`:''}" onclick="themeFilter='${f.key}';renderPipeline()">${f.label}</button>`;
+  }).join('');
+
+  const sorted=[...history].sort((a,b)=>b.score-a.score);
+  const filtered=sorted.filter(h=>{
+    const fitOk=pipeFilter==='all'||(pipeFilter==='excellent'&&h.score>=90)||(pipeFilter==='good'&&h.score>=70&&h.score<90)||(pipeFilter==='avg'&&h.score>=50&&h.score<70)||(pipeFilter==='below'&&h.score<50);
+    const themeOk=themeFilter==='all'||h.theme===themeFilter;
+    return fitOk&&themeOk;
+  });
+
+  const dealsHtml=filtered.length?filtered.map(h=>{
+    const b=getBand(h.score);
+    const themeColor=THEME_COLORS[h.theme]||'var(--text3)';
+    const themeBadge=h.theme?`<span style="font-size:10px;font-family:var(--mono);padding:2px 8px;border-radius:4px;color:${themeColor};background:${themeColor}18;border:1px solid ${themeColor}44;white-space:nowrap">${h.theme}</span>`:'';
+    return`<div class="deal-card" onclick="loadCompany('${h.id}')" style="cursor:pointer">
+      <div class="deal-score" style="color:${b.color}">${h.score}</div>
+      <div class="deal-info">
+        <div class="deal-name">${h.name}</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:2px;flex-wrap:wrap">
+          <span style="font-size:11px;color:var(--text3);font-family:var(--mono)">${h.date} · ${h.scored}/${ALL_ITEMS.length} scored</span>
+          ${themeBadge}
+        </div>
+      </div>
+      <span class="deal-pill" style="color:${b.color};background:${b.bg};border:1px solid ${b.border};flex-shrink:0">${b.label}</span>
+      <div class="deal-actions" onclick="event.stopPropagation()">
+        <button class="icon-btn" onclick="startRerun('${h.id}')" title="Re-run analysis with new deck" style="color:var(--green);border-color:var(--green-border)">↻ Re-run</button>
+        <button class="icon-btn btn-danger" onclick="deleteCompany('${h.id}')" title="Delete">✕</button>
+      </div>
+    </div>`;
+  }).join(''):'<div class="empty-state" style="padding:2rem"><div class="big" style="font-size:20px">—</div>No companies in this category</div>';
+
+  el.innerHTML=`
+    <div style="margin-bottom:6px">
+      <div style="font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-bottom:6px">Filter by fit</div>
+      <div class="pipe-filter-bar" style="margin-bottom:10px">${fitBar}</div>
+      <div style="font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-bottom:6px">Filter by theme</div>
+      <div class="pipe-filter-bar">${themeBar}</div>
+    </div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:10px">${filtered.length} of ${history.length} companies</div>
+    ${dealsHtml}`;
+  document.getElementById('pipe-badge').textContent=history.length;
+}
+
+// ---- SAVE / LOAD ----
+function saveAndReview(){
+  saveCurrentCompany();
+  showPage('score');
+}
+
+function saveCurrentCompany(){
+  const name=document.getElementById('company-name').value||'Unnamed company';
+  const{finalPct,totalScored}=calcScore();
+  if(totalScored===0){alert('Score at least one criterion before saving.');return;}
+  // Use rerun target id, or existing entry with same name, or new id
+  const existingIdx=rerunTargetId
+    ?history.findIndex(h=>h.id===rerunTargetId)
+    :history.findIndex(h=>h.name===name);
+  const id=(existingIdx>=0)?history[existingIdx].id:'c_'+Date.now();
+  const entry={
+    id,name,score:finalPct,
+    date:new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}),
+    scored:totalScored,
+    scores:{...scores},notes:{...notes},
+    highlights:[...aiHighlights],concerns:[...aiConcerns],
+    redFlags:[...aiRedFlags],diveInto:[...aiDiveInto],
+    theme:aiTheme,comps:[...aiComps],weights:{...weights}
+  };
+  if(existingIdx>=0){history[existingIdx]=entry;}else{history.push(entry);}
+  rerunTargetId=null;
+  saveHistory();
+  renderHistNav();
+  renderDashboard();
+  renderPipeline();
+  document.getElementById('pipe-badge').textContent=history.length;
+  renderSaveArea(true);
+}
+
+let rerunTargetId=null;
+function startRerun(id){
+  const h=history.find(x=>x.id===id);if(!h)return;
+  rerunTargetId=id;
+  // Load existing data so scores/notes are preserved if re-run is partial
+  scores={...h.scores};notes={...h.notes||{}};
+  aiHighlights=[...h.highlights||[]];aiConcerns=[...h.concerns||[]];
+  aiRedFlags=[...h.redFlags||[]];aiDiveInto=[...h.diveInto||[]];aiTheme=h.theme||'';aiComps=[...h.comps||[]];
+  if(h.weights)Object.assign(weights,h.weights);
+  document.getElementById('company-name').value=h.name;
+  // show upload pane with a banner indicating re-run mode
+  showPage('upload');
+  document.getElementById('upload-result').style.display='';
+  document.getElementById('upload-result').innerHTML=`
+    <div style="background:var(--amber-dim);border:1px solid var(--amber-border);border-radius:8px;padding:1rem 1.25rem;margin-bottom:0">
+      <div style="font-size:13px;font-weight:600;color:var(--amber);margin-bottom:4px">↻ Re-running: ${h.name}</div>
+      <div style="font-size:12px;color:var(--text2)">Upload a new deck or notes below. Scores will be updated and the existing pipeline entry will be overwritten.</div>
+      <button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="rerunTargetId=null;document.getElementById('upload-result').style.display='none'">Cancel</button>
+    </div>`;
+}
+
+function loadCompany(id){
+  const h=history.find(x=>x.id===id);if(!h)return;
+  scores={...h.scores};notes={...h.notes||{}};
+  aiHighlights=[...h.highlights||[]];aiConcerns=[...h.concerns||[]];aiRedFlags=[...h.redFlags||[]];aiDiveInto=[...h.diveInto||[]];aiTheme=h.theme||'';aiComps=[...h.comps||[]];aiRedFlags=[...h.redFlags||[]];aiDiveInto=[...h.deepDive||[]];
+  if(h.weights)Object.assign(weights,h.weights);
+  document.getElementById('company-name').value=h.name;
+  showPage('score');
+}
+
+function deleteCompany(id){
+  if(!confirm('Delete this company from history?'))return;
+  history=history.filter(h=>h.id!==id);
+  saveHistory();renderHistNav();renderDashboard();renderPipeline();
+  document.getElementById('pipe-badge').textContent=history.length;
+}
+
+function renderHistNav(){
+  const el=document.getElementById('hist-nav-list');
+  if(!history.length){el.innerHTML='<div style="padding:6px 1.25rem;font-size:11px;color:var(--text3)">No history yet</div>';return;}
+  const sorted=[...history].sort((a,b)=>b.score-a.score);
+  el.innerHTML=sorted.slice(0,8).map(h=>{
+    const b=getBand(h.score);
+    return`<div style="border-left:2px solid ${b.color};cursor:pointer;padding:8px 1.25rem;transition:background .15s;display:flex;flex-direction:column;gap:3px" onclick="loadCompany('${h.id}')" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
+      <div style="font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${h.name}</div>
+      <div style="font-size:10px;font-family:var(--mono);color:${b.color}">${h.score}/100 · ${b.label}</div>
+      ${h.theme?`<div style="font-size:10px;color:var(--text3)">${h.theme}</div>`:''}
+      <div onclick="event.stopPropagation();startRerun('${h.id}')" style="font-size:10px;color:var(--text3);margin-top:2px;display:flex;align-items:center;gap:3px;width:fit-content;padding:1px 6px;border:1px solid var(--border);border-radius:4px;transition:all .12s" onmouseover="this.style.borderColor='var(--green)';this.style.color='var(--green)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text3)'">↻ re-run</div>
+    </div>`;
+  }).join('');
+}
+
+function renderSaveArea(saved){
+  const el=document.getElementById('score-save-area');
+  const{totalScored,finalPct,sectionScores}=calcScore();
+  if(!totalScored){el.innerHTML='';return;}
+  const v=getBand(finalPct);
+  const name=document.getElementById('company-name').value||'Company';
+
+  // section bars
+  const bars=CRITERIA.map(sec=>{
+    const ss=sectionScores[sec.key];if(!ss||!ss.scored)return'';
+    const bc=ss.pct>=70?'var(--green)':ss.pct>=50?'var(--amber)':'var(--red)';
+    return`<div class="bar-row"><span class="bar-label">${sec.section}</span><div class="bar-track"><div class="bar-fill" style="width:${ss.pct}%;background:${bc}"></div></div><span class="bar-pct">${ss.pct}%</span></div>`;
+  }).join('');
+
+  const hlHtml=aiHighlights.map(h=>`<div class="hl-item"><div class="hl-dot" style="background:var(--green)"></div><span style="font-size:13px">${h}</span></div>`).join('');
+  const cnHtml=aiConcerns.map(c=>`<div class="hl-item"><div class="hl-dot" style="background:var(--amber)"></div><span style="font-size:13px">${c}</span></div>`).join('');
+  const rfHtml=aiRedFlags.map(r=>`<div class="hl-item"><div class="hl-dot" style="background:var(--red)"></div><span style="font-size:13px">${r}</span></div>`).join('');
+  const diHtml=aiDiveInto.map(d=>`<div class="hl-item"><div class="hl-dot" style="background:var(--blue)"></div><span style="font-size:13px">${d}</span></div>`).join('');
+
+  const summaryCard=`
+    <div style="background:${v.bg};border:1px solid ${v.border};border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+        <div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+            <span style="font-size:15px;font-weight:600;color:${v.color}">${name}</span>
+            ${aiTheme?`<span style="font-size:10px;font-family:var(--mono);padding:2px 8px;border-radius:4px;color:${{Electrification:'#facc15','Ocean Space':'#38bdf8','Energy Security':'#a78bfa',Other:'var(--text3)'}[aiTheme]||'var(--text3)'};background:${{Electrification:'#facc1518','Ocean Space':'#38bdf818','Energy Security':'#a78bfa18',Other:'var(--bg3)'}[aiTheme]||'var(--bg3)'};border:1px solid ${{Electrification:'#facc1544','Ocean Space':'#38bdf844','Energy Security':'#a78bfa44',Other:'var(--border)'}[aiTheme]||'var(--border)'}">${aiTheme}</span>`:''}
+          </div>
+          <div style="display:flex;align-items:baseline;gap:5px">
+            <span style="font-size:30px;font-weight:600;font-family:var(--mono);color:${v.color}">${finalPct}</span>
+            <span style="font-size:13px;color:${v.color}">/100</span>
+            <span style="font-size:11px;color:var(--text3);margin-left:4px">${totalScored}/${ALL_ITEMS.length} criteria scored</span>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+          <span style="font-size:12px;font-weight:600;font-family:var(--mono);color:${v.color};background:${v.color}22;padding:5px 14px;border-radius:20px;border:1px solid ${v.border}">${v.label}</span>
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="font-size:10px;color:var(--text3);font-family:var(--mono)">Theme:</span>
+            <select onchange="aiTheme=this.value;renderSaveArea()" style="font-size:11px;font-family:var(--mono);background:var(--bg3);border:1px solid var(--border2);color:var(--text2);border-radius:4px;padding:2px 6px;cursor:pointer">
+              <option value="" ${!aiTheme?'selected':''}>— unclassified —</option>
+              <option value="Electrification" ${'Electrification'===aiTheme?'selected':''}>⚡ Electrification</option>
+              <option value="Ocean Space" ${'Ocean Space'===aiTheme?'selected':''}>🌊 Ocean Space</option>
+              <option value="Energy Security" ${'Energy Security'===aiTheme?'selected':''}>🛡 Energy Security</option>
+              <option value="Other" ${'Other'===aiTheme?'selected':''}>◉ Other</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:1rem">
+        ${hlHtml?`<div><div style="font-size:10px;font-weight:600;font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-bottom:6px">✦ Highlights</div>${hlHtml}</div>`:''}
+        ${cnHtml?`<div><div style="font-size:10px;font-weight:600;font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-bottom:6px">⚠ Key concerns</div>${cnHtml}</div>`:''}
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:1rem">
+        ${rfHtml?`<div><div style="font-size:10px;font-weight:600;font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--red);margin-bottom:6px">🚩 Red flags</div>${rfHtml}</div>`:''}
+        ${diHtml?`<div><div style="font-size:10px;font-weight:600;font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--blue);margin-bottom:6px">🔍 Dive deeper</div>${diHtml}</div>`:''}
+      </div>
+
+      <div style="margin-bottom:${aiComps&&aiComps.length?'1rem':'0'}"><div style="font-size:10px;font-weight:600;font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-bottom:8px">Score by section</div>${bars}</div>
+    ${aiComps&&aiComps.length?`
+      <div style="border-top:1px solid var(--border);padding-top:1rem;margin-top:0.5rem">
+        <div style="font-size:10px;font-weight:600;font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--blue);margin-bottom:10px">🔎 Competitor landscape</div>
+        ${buildCompsHtml(aiComps,true)}
+      </div>`:''}
+    </div>`;
+
+  const saveBar=saved
+    ?`<div style="background:var(--green-dim);border:1px solid var(--green-border);border-radius:var(--radius);padding:10px 14px;font-size:13px;color:var(--green)">✓ Saved to pipeline</div>`
+    :`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:1.5rem">
+        <button class="btn btn-primary" onclick="saveCurrentCompany()">Save to pipeline</button>
+        <button class="btn btn-ghost btn-sm" onclick="exportCSV()">↓ Export CSV</button>
+      </div>`;
+
+  el.innerHTML=saveBar+summaryCard;
+}
+
+// ---- SCORE / RENDER ----
+function renderVerdict(){
+  const el=document.getElementById('verdict-area');
+  const{finalPct,totalScored,sectionScores}=calcScore();
+  if(!totalScored){el.innerHTML='';return;}
+  const v=getBand(finalPct);
+  const name=document.getElementById('company-name').value||'';
+
+  const hlHtml=aiHighlights.length?`<div style="margin-bottom:10px">
+    <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;font-family:var(--mono);margin-bottom:6px">Highlights</div>
+    ${aiHighlights.map(h=>`<div class="hl-item"><div class="hl-dot" style="background:var(--green)"></div><span style="font-size:12px">${h}</span></div>`).join('')}
+  </div>`:'';
+
+  const rfHtml=aiRedFlags.length?`<div style="margin-bottom:10px">
+    <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;font-family:var(--mono);margin-bottom:6px">🚩 Red flags</div>
+    ${aiRedFlags.map(r=>`<div class="hl-item"><div class="hl-dot" style="background:var(--red)"></div><span style="font-size:12px">${r}</span></div>`).join('')}
+  </div>`:'';
+
+  const ddHtml=aiDiveInto.length?`<div>
+    <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;font-family:var(--mono);margin-bottom:6px">🔍 Dive deeper into</div>
+    ${aiDiveInto.map(d=>`<div class="hl-item"><div class="hl-dot" style="background:var(--blue)"></div><span style="font-size:12px">${d}</span></div>`).join('')}
+  </div>`:'';
+
+  const bars=CRITERIA.map(sec=>{
+    const ss=sectionScores[sec.key];if(!ss||!ss.scored)return'';
+    const bc=ss.pct>=70?'var(--green)':ss.pct>=50?'var(--amber)':'var(--red)';
+    return`<div class="bar-row">
+      <span class="bar-label" style="width:140px;font-size:11px">${sec.section}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${ss.pct}%;background:${bc}"></div></div>
+      <span class="bar-pct">${ss.pct}%</span>
+    </div>`;
+  }).join('');
+
+  const hasSummary=aiHighlights.length||aiRedFlags.length||aiDiveInto.length;
+
+  el.innerHTML=`
+    <div style="background:${v.bg};border:1px solid ${v.border};border-radius:8px;padding:1.1rem 1.25rem;margin-bottom:1.25rem">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${hasSummary||bars?'14px':'0'}">
+        <div style="display:flex;align-items:baseline;gap:6px">
+          ${name?`<span style="font-size:14px;font-weight:600;color:${v.color};margin-right:8px">${name}</span>`:''}
+          <span style="font-size:28px;font-weight:600;font-family:var(--mono);color:${v.color}">${finalPct}</span>
+          <span style="font-size:13px;color:${v.color}">/100</span>
+          <span style="font-size:11px;color:var(--text3);margin-left:6px">${totalScored}/${ALL_ITEMS.length} scored</span>
+        </div>
+        <span class="verdict-pill" style="color:${v.color};background:${v.color}22;border:1px solid ${v.border}">${v.label}</span>
+      </div>
+      ${hasSummary?`<div style="display:grid;grid-template-columns:${aiRedFlags.length&&aiDiveInto.length?'1fr 1fr 1fr':'1fr 1fr'};gap:16px;margin-bottom:${bars?'14px':'0'};border-top:1px solid ${v.border};padding-top:12px">
+        ${hlHtml}${rfHtml}${ddHtml}
+      </div>`:''}
+      ${bars?`<div style="${hasSummary?'border-top:1px solid '+v.border+';padding-top:12px':''}">${bars}</div>`:''}
+    </div>`;
+}
+
+function renderCriteria(){
+  const el=document.getElementById('criteria-list');
+  const{sectionScores}=calcScore();
+  el.innerHTML=CRITERIA.map(sec=>{
+    const ss=sectionScores[sec.key];
+    const badge=ss&&ss.scored?`<span class="sec-score-badge" style="color:${ss.pct>=70?'var(--green)':ss.pct>=50?'var(--amber)':'var(--red)'};background:${ss.pct>=70?'var(--green-dim)':ss.pct>=50?'var(--amber-dim)':'var(--red-dim)'};border:1px solid ${ss.pct>=70?'var(--green-border)':ss.pct>=50?'var(--amber-border)':'var(--red-border)'}">${ss.pct}%</span>`:'';
+    return`<div class="section-header"><span class="section-name">${sec.section}</span><span class="weight-badge">${weights[sec.key]}%</span>${badge}</div>
+    ${sec.items.map(item=>{
+      const s=scores[item.key];
+      const desc=s===2?item.ideal:s===1?item.acceptable:s===0?item.unacceptable:'';
+      return`<div class="crit-item">
+        <div class="crit-row">
+          <span class="crit-name">${item.label}</span>
+          <div class="score-btns">
+            <button class="sbtn ideal ${s===2?'on':''}" onclick="setScore('${item.key}',${s===2?'null':2})">Ideal</button>
+            <button class="sbtn acceptable ${s===1?'on':''}" onclick="setScore('${item.key}',${s===1?'null':1})">OK</button>
+            <button class="sbtn pass ${s===0?'on':''}" onclick="setScore('${item.key}',${s===0?'null':0})">Pass</button>
+          </div>
+        </div>
+        ${desc?`<div class="crit-desc">${desc}</div>`:''}
+        <textarea class="crit-note" rows="1" placeholder="Add note…" oninput="notes['${item.key}']=this.value;debounceSaveNotes()">${(notes[item.key]||'').replace(/</g,'&lt;')}</textarea>
+      </div>`;
+    }).join('')}`;
+  }).join('');
+}
+
+function renderSummary(){}// kept for compat
+
+function setScore(key,val){
+  if(val===null||val==='null')delete scores[key];else scores[key]=val;
+  syncActiveHistoryEntry();
+  renderVerdict();renderCriteria();renderSaveArea();
+}
+
+function syncActiveHistoryEntry(){
+  // If a company is loaded from history, keep it in sync as scores/notes change
+  const name=document.getElementById('company-name').value;
+  if(!name)return;
+  const entry=history.find(h=>h.name===name);
+  if(!entry)return;
+  const{finalPct,totalScored}=calcScore();
+  entry.score=finalPct;
+  entry.scored=totalScored;
+  entry.scores={...scores};
+  entry.notes={...notes};
+  entry.theme=aiTheme;
+  entry.highlights=[...aiHighlights];
+  entry.concerns=[...aiConcerns];
+  entry.redFlags=[...aiRedFlags];
+  entry.diveInto=[...aiDiveInto];
+  entry.comps=[...aiComps];
+  saveHistory();
+  renderHistNav();
+  renderDashboard();
+  renderPipeline();
+  document.getElementById('pipe-badge').textContent=history.length;
+}
+
+function resetAll(){
+  scores={};notes={};aiHighlights=[];aiConcerns=[];aiRedFlags=[];aiDiveInto=[];aiTheme='';aiComps=[];aiRedFlags=[];aiDiveInto=[];
+  document.getElementById('company-name').value='';
+  document.getElementById('upload-result').style.display='none';
+  renderVerdict();renderCriteria();renderSaveArea();
+}
+
+// ---- WEIGHTS ----
+function renderWeights(){
+  document.getElementById('weight-controls').innerHTML=CRITERIA.map(sec=>`
+    <div class="weight-card">
+      <div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:10px">${sec.section}</div>
+      <div class="weight-slider-row">
+        <input type="range" min="0" max="60" step="5" value="${weights[sec.key]}" oninput="setWeight('${sec.key}',+this.value)">
+        <span style="font-size:13px;font-weight:600;font-family:var(--mono);min-width:36px;text-align:right" id="wlbl-${sec.key}">${weights[sec.key]}%</span>
+      </div>
+    </div>`).join('');
+  renderWeightTotal();
+}
+function setWeight(key,val){weights[key]=val;document.getElementById('wlbl-'+key).textContent=val+'%';renderWeightTotal();renderVerdict();}
+function renderWeightTotal(){
+  const t=Object.values(weights).reduce((a,b)=>a+b,0);const ok=t===100;
+  document.getElementById('weight-total').innerHTML=`<div class="total-bar" style="background:${ok?'var(--green-dim)':'var(--red-dim)'};border-color:${ok?'var(--green-border)':'var(--red-border)'}">
+    <span style="color:${ok?'var(--green)':'var(--red)'}">${ok?'✓ Weights balanced':'Adjust to reach 100%'}</span>
+    <span style="font-weight:600;font-family:var(--mono);color:${ok?'var(--green)':'var(--red)'}">${t}% / 100%</span>
+  </div>`;
+}
+
+// ---- EXPORT ----
+function exportCSV(){
+  const name=document.getElementById('company-name').value||'Company';
+  const{finalPct}=calcScore();const v=getBand(finalPct);
+  let rows=[['Company','Criterion','Section','Score','Label','Note']];
+  CRITERIA.forEach(sec=>{sec.items.forEach(item=>{
+    const s=scores[item.key];const lbl=s===2?'Ideal':s===1?'Acceptable':s===0?'Pass':'—';
+    rows.push([name,item.label,sec.section,s!=null?s:'',lbl,notes[item.key]||'']);
+  });});
+  rows.push(['','','','','','']);rows.push(['','Weighted score',finalPct,'','Verdict',v.label]);
+  const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download=(name.replace(/[^a-z0-9]/gi,'_')||'company')+'_FundII_screen.csv';a.click();
+}
+
+// ---- API / UPLOAD ----
+async function checkServer(){
+  const el=document.getElementById('server-check-result');
+  el.textContent='Checking…';el.style.color='var(--text3)';
+  try{
+    const ctrl=new AbortController();
+    const tid=setTimeout(()=>ctrl.abort(),3000);
+    const res=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}',signal:ctrl.signal});
+    clearTimeout(tid);
+    document.getElementById('api-dot').className='api-dot ok';
+    document.getElementById('api-status-text').textContent='Server running';
+    el.style.color='var(--green)';el.textContent='✓ Server is running — upload a deck';
+  }catch(e){
+    // If we get a response error (4xx/5xx) server IS running, just rejected the empty body
+    if(e.name!=='AbortError' && e.message&&e.message.includes('Failed to fetch')){
+      document.getElementById('api-dot').className='api-dot err';
+      document.getElementById('api-status-text').textContent='Server offline';
+      el.style.color='var(--red)';el.textContent='✗ Run START_SERVER.bat first';
+    } else {
+      // Got a response (even an error response) = server is up
+      document.getElementById('api-dot').className='api-dot ok';
+      document.getElementById('api-status-text').textContent='Server running';
+      el.style.color='var(--green)';el.textContent='✓ Server is running — upload a deck';
+    }
+  }
+}
+
+async function handleFile(e){
+  const f=e.target.files[0];if(!f)return;
+  document.getElementById('ai-loading').style.display='flex';
+  document.getElementById('upload-result').style.display='none';
+  const toB64=file=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(file);});
+  let fileContent;
+  if(f.type==='application/pdf'||f.type.startsWith('image/')){const b64=await toB64(f);fileContent={type:'b64',media_type:f.type,data:b64};}
+  else{const txt=await f.text();fileContent={type:'text',text:txt.slice(0,12000)};}
+  function makeMsg(prompt){
+    if(fileContent.type==='b64')return[{type:fileContent.media_type==='application/pdf'?'document':'image',source:{type:'base64',media_type:fileContent.media_type,data:fileContent.data}},{type:'text',text:prompt}];
+    return prompt+'\n\nDOCUMENT:\n'+fileContent.text;
+  }
+  async function callAPI(prompt){
+    const res=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:4096,messages:[{role:'user',content:makeMsg(prompt)}]})});
+    if(!res.ok){const err=await res.text();throw new Error(`API ${res.status}: ${err}`);}
+    const data=await res.json();
+    const raw=data.content?.find(b=>b.type==='text')?.text||'';
+    return JSON.parse(raw.replace(/^```(?:json)?\s*/,'').replace(/\s*```$/,'').trim());
+  }
+  try{
+    document.getElementById('loading-text').textContent='Analysing overview, product & commercial… (1/2)';
+    const sectABC=CRITERIA.slice(0,3);const keysABC=sectABC.flatMap(s=>s.items.map(i=>i.key));
+    const criteriaABC=sectABC.map(s=>s.section+':\n'+s.items.map(i=>`- ${i.label}: Ideal=${i.ideal} | Acceptable=${i.acceptable} | Pass=${i.unacceptable}`).join('\n')).join('\n\n');
+    const schemaABC='{"companyName":"string",'+keysABC.map(k=>`"${k}":0|1|2|null`).join(',')+',"highlights":["3-4 key strengths with specific data points"],"concerns":["1-2 concerns"],"redFlags":["1-3 specific red flags — dealbreakers or material risks with evidence from the deck"],"deepDive":["2-3 concrete areas requiring further diligence before proceeding — be specific about what to probe"]}';
+    const p1=await callAPI(`You are an investment analyst for a Nordic energy transition fund (Fund II). Evaluate the company against these criteria:\n\n${criteriaABC}\n\nReturn ONLY valid JSON, no markdown:\n${schemaABC}\n\nScore: 2=Ideal, 1=Acceptable, 0=Pass. null if info missing. Be strict.
+
+For redFlags: order from most to least critical. Focus especially on: (1) commercial maturity — are they still at pilot/POC stage with no real revenue traction? (2) forecast credibility — are projections bullish and not underpinned by backlog, order book or signed contracts? (3) competition and barriers to entry — do they lack unique tech differentiation or face commoditised markets? List the most material deal risks first.
+
+For diveInto: order from most to least important. Focus on items requiring deeper DD before a decision can be made. Be specific and actionable.
+
+For theme: classify into exactly one of these four themes based on the company's primary business:
+- "Electrification": EV charging infrastructure, renewable energy generation, power conversion, energy storage (grid-scale BESS), battery technology, grid-connected technologies, power grid digitalization, smart grid software, demand response, virtual power plants, solar/wind/hydro assets or technology.
+- "Ocean Space": maritime technology, shipping, autonomous or remotely operated vessels, maritime BESS/energy storage on ships or ports, shoreside/shoreline EV charging for vessels, port optimization software, subsea technology, offshore energy (offshore wind operations, subsea cables), ocean data and monitoring, marine robotics.
+- "Energy Security": energy security and resilience, mission-critical infrastructure protection, critical infrastructure monitoring or cybersecurity, drones and UAVs with energy or defence applications, dual-use technologies (civil and defence), defence-adjacent technology, grid resilience, energy independence solutions, protection of power infrastructure, military or government energy supply, satellite/communications for energy security.
+- "Other": does not clearly fit any of the above.
+Choose the single best fit. If genuinely unclear, use "Other".`);
+
+    document.getElementById('loading-text').textContent='Analysing financials & transaction… (2/2)';
+    const sectDEF=CRITERIA.slice(3);const keysDEF=sectDEF.flatMap(s=>s.items.map(i=>i.key));
+    const criteriaDEF=sectDEF.map(s=>s.section+':\n'+s.items.map(i=>`- ${i.label}: Ideal=${i.ideal} | Acceptable=${i.acceptable} | Pass=${i.unacceptable}`).join('\n')).join('\n\n');
+    const schemaDEF='{'+keysDEF.map(k=>`"${k}":0|1|2|null`).join(',')+'}';
+    const p2=await callAPI(`You are an investment analyst for a Nordic energy transition fund (Fund II). Evaluate the company against these criteria:\n\n${criteriaDEF}\n\nReturn ONLY valid JSON, no markdown:\n${schemaDEF}\n\nScore: 2=Ideal, 1=Acceptable, 0=Pass. null if info missing. Be strict.`);
+
+    const parsed={...p1,...p2};
+    const allKeys=ALL_ITEMS.map(i=>i.key);
+    if(parsed.companyName)document.getElementById('company-name').value=parsed.companyName;
+    allKeys.forEach(k=>{if(parsed[k]!=null)scores[k]=parsed[k];});
+    aiHighlights=Array.isArray(parsed.highlights)?parsed.highlights:[];
+    aiConcerns=Array.isArray(parsed.concerns)?parsed.concerns:[];
+    aiRedFlags=Array.isArray(parsed.redFlags)?parsed.redFlags:[];
+    aiDiveInto=Array.isArray(parsed.diveInto)?parsed.diveInto:[];
+    aiTheme=parsed.theme||'';
+    aiRedFlags=Array.isArray(parsed.redFlags)?parsed.redFlags:[];
+    aiDiveInto=Array.isArray(parsed.deepDive)?parsed.deepDive:[];
+
+    // ── PASS 3: Comparable companies via web search ──
+    document.getElementById('loading-text').textContent='Researching comparable companies…';
+    let aiComps=[];
+    try{
+      const compPrompt=`The company being screened is: ${parsed.companyName||'unknown'}. Theme: ${parsed.theme||'energy transition'}. Based on what you know, identify the top 2-3 most relevant startups or scaleups operating in a similar space. For each return: name, HQ country/city, total funding raised, most recent funding round (amount + date + lead investors if known), and a one-sentence description of their technology and market focus. Return ONLY valid JSON array, no markdown: [{"name":"string","hq":"string","totalRaised":"string","lastRound":"string","lastRoundDate":"string","leadInvestors":"string","description":"string"}]`;
+      const compRes=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+        model:'claude-sonnet-4-5',max_tokens:1500,
+        tools:[{"type":"web_search_20250305","name":"web_search"}],
+        messages:[{role:'user',content:compPrompt}]
+      })});
+      if(compRes.ok){
+        const compData=await compRes.json();
+        // extract text blocks (web search may return tool_use + text blocks)
+        const textBlocks=compData.content?.filter(b=>b.type==='text')||[];
+        const rawComp=textBlocks.map(b=>b.text).join('');
+        if(rawComp){
+          const cleanComp=rawComp.replace(/^```(?:json)?\s*/,'').replace(/\s*```$/,'').trim();
+          const jsonStart=cleanComp.indexOf('[');
+          const jsonEnd=cleanComp.lastIndexOf(']');
+          if(jsonStart!==-1&&jsonEnd!==-1){
+            aiComps=JSON.parse(cleanComp.slice(jsonStart,jsonEnd+1));
+          }
+        }
+      }
+    }catch(compErr){console.warn('Comps fetch failed:',compErr);}
+
+    const{finalPct}=calcScore();const v=getBand(finalPct);const name=parsed.companyName||'Company';
+    const hlHtml=aiHighlights.map(h=>`<div class="hl-item"><div class="hl-dot" style="background:var(--green)"></div><span style="font-size:13px">${h}</span></div>`).join('');
+    const rfHtml=aiRedFlags.map(r=>`<div class="hl-item"><div class="hl-dot" style="background:var(--red)"></div><span style="font-size:13px">${r}</span></div>`).join('');
+    const ddHtml=aiDiveInto.map(d=>`<div class="hl-item"><div class="hl-dot" style="background:var(--blue)"></div><span style="font-size:13px">${d}</span></div>`).join('');
+    document.getElementById('upload-result').style.display='';
+
+    // Build result HTML - no inline onclicks (breaks in some browsers when injected via innerHTML)
+    const themeCol={'Electrification':'#facc15','Ocean Space':'#38bdf8','Energy Security':'#a78bfa','Other':'#8a9299'}[aiTheme]||'#8a9299';
+    const hlHtml2=aiHighlights.map(h=>`<div class="hl-item"><div class="hl-dot" style="background:var(--green)"></div><span style="font-size:13px">${h}</span></div>`).join('');
+    const cnHtml=aiConcerns.map(c=>`<div class="hl-item"><div class="hl-dot" style="background:var(--amber)"></div><span style="font-size:13px">${c}</span></div>`).join('');
+    const rfHtml2=aiRedFlags.map(r=>`<div class="hl-item"><div class="hl-dot" style="background:var(--red)"></div><span style="font-size:13px">${r}</span></div>`).join('');
+    const diHtml2=aiDiveInto.map(d=>`<div class="hl-item"><div class="hl-dot" style="background:var(--blue)"></div><span style="font-size:13px">${d}</span></div>`).join('');
+    const resultHtml=`
+      <div style="background:${v.bg};border:1px solid ${v.border};border-radius:8px;padding:1.25rem">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;gap:10px;flex-wrap:wrap">
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+              <span style="font-size:16px;font-weight:600;color:${v.color}">${name}</span>
+              ${aiTheme?`<span style="font-size:10px;font-family:var(--mono);padding:2px 8px;border-radius:4px;color:${themeCol};background:${themeCol}18;border:1px solid ${themeCol}44">${aiTheme}</span>`:'<span style="font-size:10px;font-family:var(--mono);padding:2px 8px;border-radius:4px;color:var(--text3);background:var(--bg3);border:1px solid var(--border)">theme undetected</span>'}
+            </div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <span style="font-size:10px;color:var(--text3);font-family:var(--mono)">Override theme:</span>
+              <select id="upload-theme-select" style="font-size:11px;font-family:var(--mono);background:var(--bg3);border:1px solid var(--border2);color:var(--text2);border-radius:4px;padding:2px 6px;cursor:pointer">
+                <option value="">— auto-detected —</option>
+                <option value="Electrification" ${aiTheme==='Electrification'?'selected':''}>⚡ Electrification</option>
+                <option value="Ocean Space" ${aiTheme==='Ocean Space'?'selected':''}>🌊 Ocean Space</option>
+                <option value="Energy Security" ${aiTheme==='Energy Security'?'selected':''}>🛡 Energy Security</option>
+                <option value="Other" ${aiTheme==='Other'?'selected':''}>◉ Other</option>
+              </select>
+            </div>
+          </div>
+          <span style="font-size:12px;font-weight:600;font-family:var(--mono);color:${v.color};background:${v.color}22;padding:4px 12px;border-radius:20px;border:1px solid ${v.border};white-space:nowrap;align-self:flex-start">${v.label} — ${finalPct}/100</span>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:12px">
+          ${hlHtml?`<div><div style="font-size:10px;font-weight:600;font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-bottom:6px">✦ Highlights</div>${hlHtml}</div>`:''}
+          ${cnHtml?`<div><div style="font-size:10px;font-weight:600;font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-bottom:6px">⚠ Concerns</div>${cnHtml}</div>`:''}
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+          ${rfHtml2?`<div><div style="font-size:10px;font-weight:600;font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--red);margin-bottom:6px">🚩 Red flags</div>${rfHtml2}</div>`:''}
+          ${diHtml2?`<div><div style="font-size:10px;font-weight:600;font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--blue);margin-bottom:6px">🔍 Dive deeper</div>${diHtml2}</div>`:''}
+        </div>
+
+        ${aiComps&&aiComps.length?`<div style="border-top:1px solid ${v.border};padding-top:12px;margin-bottom:14px"><div style="font-size:10px;font-weight:600;font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--blue);margin-bottom:10px">🔎 Competitor landscape</div>${buildCompsHtml(aiComps,true)}</div>`:''}
+
+        <div style="display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid ${v.border};padding-top:12px;margin-top:4px">
+          <button class="btn btn-primary btn-sm" data-action="saveReview">Save &amp; review scores &#8594;</button>
+          <button class="btn btn-ghost btn-sm" data-action="viewPipeline">View pipeline &#8594;</button>
+        </div>
+      </div>`;
+
+    document.getElementById('upload-result').innerHTML=resultHtml;
+
+    // Wire theme select (created fresh each time)
+    setTimeout(function(){
+      const themeSelect=document.getElementById('upload-theme-select');
+      if(themeSelect) themeSelect.addEventListener('change',function(){aiTheme=this.value;});
+    },50);
+  }catch(err){
+    document.getElementById('upload-result').style.display='';
+    let errMsg=err.message||String(err);
+    let hint='';
+    if(errMsg.includes('Failed to fetch')||errMsg.includes('NetworkError')){
+      hint='<br><br>The proxy server is not reachable. Make sure START_SERVER.bat is running and showing "Running on http://localhost:8765".';
+    } else if(errMsg.includes('JSON')){
+      hint='<br><br>The AI response could not be parsed. Try uploading again.';
+    }
+    document.getElementById('upload-result').innerHTML=`<div class="err-box">Error: ${errMsg}${hint}</div>`;
+  }finally{
+    document.getElementById('ai-loading').style.display='none';
+    document.getElementById('file-input').value='';
+  }
+}
+
+// drag and drop
+const zone=document.getElementById('upload-zone');
+zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('drag');});
+zone.addEventListener('dragleave',()=>zone.classList.remove('drag'));
+zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('drag');const f=e.dataTransfer.files[0];if(f){document.getElementById('file-input').files=e.dataTransfer.files;handleFile({target:{files:[f]}});}});
+
+// Fix legacy history entries missing theme
+function fixLegacyHistory(){
+  let changed=false;
+  history.forEach(h=>{
+    if(!h.theme){
+      // Auto-assign based on name patterns
+      const n=(h.name||'').toLowerCase();
+      if(n.includes('mainstay')||n.includes('maritime')||n.includes('ocean')||n.includes('vessel')||n.includes('ship')||n.includes('port')){
+        h.theme='Ocean Space';changed=true;
+      } else if(n.includes('scout')||n.includes('drone')||n.includes('uav')||n.includes('security')||n.includes('defence')||n.includes('defense')||n.includes('resilience')||n.includes('infrastructure')){
+        h.theme='Energy Security';changed=true;
+      } else if(n.includes('ev')||n.includes('charging')||n.includes('solar')||n.includes('wind')||n.includes('grid')||n.includes('bess')||n.includes('battery')){
+        h.theme='Electrification';changed=true;
+      }
+    }
+    // Rename "Energy Resilience" to "Energy Security" if anyone saved it wrong
+    if(h.theme==='Energy Resilience'){h.theme='Energy Security';changed=true;}
+  });
+  if(changed)saveHistory();
+}
+
+// Notes debounce save
+let _notesTimer=null;
+function buildCompsHtml(comps,slim){
+  if(!comps||!comps.length)return'';
+  return`<div style="${slim?'':'margin-top:14px'}">
+    ${slim?'':'<div style="font-size:10px;font-weight:600;font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--blue);margin-bottom:8px">🔎 Comparable companies</div>'}
+    ${comps.map(c=>`
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin-bottom:6px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+          <span style="font-size:13px;font-weight:600;color:var(--text)">${c.name||'—'}</span>
+          <span style="font-size:10px;font-family:var(--mono);color:var(--text3);flex-shrink:0">${c.hq||''}</span>
+        </div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:5px;line-height:1.5">${c.description||''}</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          ${c.totalRaised?`<span style="font-size:10px;font-family:var(--mono);color:var(--green);background:var(--green-dim);border:1px solid var(--green-border);padding:1px 7px;border-radius:4px">Total raised: ${c.totalRaised}</span>`:''}
+          ${c.lastRound?`<span style="font-size:10px;font-family:var(--mono);color:var(--text3);background:var(--bg2);border:1px solid var(--border);padding:1px 7px;border-radius:4px">${c.lastRound}${c.lastRoundDate?' · '+c.lastRoundDate:''}</span>`:''}
+          ${c.leadInvestors?`<span style="font-size:10px;color:var(--text3);font-style:italic">${c.leadInvestors}</span>`:''}
+        </div>
+      </div>`).join('')}
+  </div>`;
+}
+
+function debounceSaveNotes(){
+  clearTimeout(_notesTimer);
+  _notesTimer=setTimeout(()=>{
+    syncActiveHistoryEntry();
+  },800);
+}
+
+// Delegated click handler for upload-result buttons - attached ONCE at startup
+document.addEventListener('DOMContentLoaded', function(){
+  var resultDiv = document.getElementById('upload-result');
+  if(resultDiv){
+    resultDiv.addEventListener('click', function(e){
+      var btn = e.target.closest('[data-action]');
+      if(!btn) return;
+      var action = btn.getAttribute('data-action');
+      if(action === 'saveReview'){
+        saveCurrentCompany();
+        showPage('score');
+      } else if(action === 'viewPipeline'){
+        showPage('pipeline');
+      }
+    });
+  }
+});
+
+// init
+fixLegacyHistory();
+renderHistNav();
+renderDashboard();
+document.getElementById('pipe-badge').textContent=history.length;
+</script>
+</body>
+</html>
